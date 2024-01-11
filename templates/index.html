@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('{{ url_for("static", filename="background.png") }}');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.625);
+            padding: 30px;
+            border-radius: 10px;
+        }
+        canvas {
+            height: 100%;
+        }
+
+        form, button, a {
+            margin: 10px;
+        }
+        /* CSV option */
+        #download-csv {
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        #download-csv:hover {
+            background-color: #0056b3;
+        }
+        /* Add styles for the text at the top-right corner */
+        .top-right-text1 {
+            position: absolute;
+            top: 25px;
+            right: 20px;
+            font-size: 14px;
+            color: #0056b3;
+        }
+        .top-right-text2 {
+            position: absolute;
+            top: 43px;
+            right: 20px;
+            font-size: 14px;
+            color: #0056b3;
+        }
+        /* refresh button specification*/
+        #refresh-btn {
+            display: block;
+            margin: 0 auto;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        #refresh-btn:hover {
+            background-color: black;
+        }
+        #time-selection {
+            margin-top: 15px;
+        }
+        #time-selection button {
+            margin-left: 10px;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Name to be appearing when local host is called -->
+    <title>Graphs Dashboard</title>
+</head>
+<body>
+    <div class="container">
+        <!-- Download CSV option -->
+        <a download="data.csv" href="data:text/csv;charset=utf-8,{{ csv_data|safe }}" class="btn btn-primary">Download CSV</a>
+        <button id="refresh-btn" class="btn btn-primary" style="display: block; margin: 0 auto;">
+            Refresh
+        </button>
+        <divstyle="width: 100%; height: 100%;">
+            <!-- Plotting the graphs -->
+            {{ graph|safe }}
+        </div>
+        <div class="top-right-text1">Double tap on legend to selectively view, zoom into graph for a particular range</div>
+        <div class="top-right-text2">Explore features like download as png, zoom, pan, autoscale in plotly</div>
+    </div>
+    <!-- Time section for interval to print the graph -->
+    <div class="container" id="time-selection">
+        <form id="time-window-form">
+            <label for="start-time">Start Time:</label>
+            <input type="datetime-local" id="start-time" name="start-time">
+
+            <label for="end-time">End Time:</label>
+            <input type="datetime-local" id="end-time" name="end-time">
+
+            <button type="submit" id="apply-btn">Apply</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Refresh button GET request -->
+    <script>
+        $(document).ready(function() {
+            $("#refresh-btn").click(function() {
+                // make an AJAX request to the Flask endpoint that fetches the updated data
+                $.ajax({
+                    url: "{{ url_for('index') }}",  // Flask endpoint to fetch updated data
+                    type: "GET",
+                    success: function(data) {
+                        // Update the graphs with the new data
+                        var graphsDiv = document.querySelector("#graphs");
+                        Plotly.purge(graphsDiv);
+                        var fig = makeSubplots({rows: 2, cols: 2});
+                        allData.forEach(function(data, index) {
+                            var trace = {x: data.time_data, y: data.value_data, mode: "lines", name: data.table_name};
+                            var row = Math.floor(index / 2) + 1;
+                            var col = index % 2 + 1;
+                            fig.addTrace(trace, row, col);
+                        });
+                        Plotly.newPlot(graphsDiv, fig.data, fig.layout);
+                    },
+                    error: function(xhr, status, error) {
+                        console.log("Error refreshing data:", error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

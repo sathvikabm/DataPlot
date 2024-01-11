@@ -1,0 +1,17 @@
+services:
+  app:
+    platform: linux/amd64
+    build: .
+    volumes:
+      - ./:/root/home_project
+    ports:
+      - "8888:8888"
+    env_file:
+      - ./local.env
+  postgres:
+    image: postgres:15.2
+    platform: linux/amd64
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    env_file:
+      - ./local.env
